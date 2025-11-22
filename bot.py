@@ -1,32 +1,34 @@
-import logging
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
+import asyncio
+from pyrogram import Client, idle
+# ... [Aapke pehle ke imports] ...
 
-import os
+# 🚨 Zaroori Imports Jodein:
+from database.db import init_db_pool 
+from plugins.monitor import start_monitor_scheduler 
+from config import Config
 
-if bool(os.environ.get("WEBHOOK", False)):
-    from sample_config import Config
-else:
-    from config import Config
+# ... [Aapke handlers yahan rahenge] ...
 
-import pyrogram
-
-
-
-if __name__ == "__main__" :
-    if not os.path.isdir(Config.DOWNLOAD_LOCATION):
-        os.makedirs(Config.DOWNLOAD_LOCATION)
-    plugins = dict(
-        root="plugins"
-    )
-    app = pyrogram.Client(
-        "Zee5",
-        bot_token=Config.TG_BOT_TOKEN,
-        api_id=Config.APP_ID,
+async def main():
+    # Database Pool Initialize Karein
+    await init_db_pool() 
+    
+    client = Client(
+        "bot_session", 
+        api_id=Config.API_ID,
         api_hash=Config.API_HASH,
-        plugins=plugins
+        bot_token=Config.BOT_TOKEN,
+        plugins=dict(root="plugins")
     )
-    Config.AUTH_USERS.add(680815375)
-    app.run()
+
+    await client.start()
+
+    # Monitoring scheduler ko background task mein shuru karein
+    asyncio.create_task(start_monitor_scheduler(client)) 
+
+    await idle() 
+    
+    await client.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
