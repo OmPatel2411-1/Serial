@@ -11,7 +11,7 @@ from database.db import is_video_processed, add_processed_video
 FIRST_RUN_COMPLETED = False 
 
 # =========================================================
-# 🚨 3. ZEE5.COM CONTENT SCRAPING LOGIC
+# 🚨 ZEE5.COM CONTENT SCRAPING LOGIC
 # =========================================================
 
 def scrape_new_zee5_links(user_cookies: str) -> list:
@@ -19,7 +19,7 @@ def scrape_new_zee5_links(user_cookies: str) -> list:
     zee5.com se latest video links ki list nikalta hai.
     """
     
-    # Zaroor Badlein - URL ko apne hisaab se set karein
+    # Zaroor Badlein - 3: Final URL
     LATEST_CONTENT_URL = "https://www.zee5.com/tv-shows/genre/drama/hindi" 
     
     headers = {
@@ -35,15 +35,19 @@ def scrape_new_zee5_links(user_cookies: str) -> list:
         soup = BeautifulSoup(response.content, 'html.parser')
         
         # --------------------------------------------------------------------------
-        # 🚨 ZAROOR BADLEIN - 4: HTML TAGS AUR CLASSES
-        # Yahaan aapki website ke structure ke hisaab se badlav zaruri hai
+        # 🚨 FINAL SCRAPING STRUCTURE (Aapke analysis ke anusaar)
         # --------------------------------------------------------------------------
         
-        # 1. Main List Container Dhoondhein
-        main_list_wrapper = soup.find('div', class_='movieTrayWrapper') 
+        # 1. Bada Container Dhoondhein
+        tray_content = soup.find('div', class_='trayContentWrap') 
+        if not tray_content: return []
+            
+        # 2. List Wrapper (movieTrayWrapper) dhoondhein
+        main_list_wrapper = tray_content.find('div', class_='movieTrayWrapper') 
         if not main_list_wrapper: return []
             
-        # 2. Container ke andar har video item ko dhoondhein (Finalized selector)
+        # 3. Har individual video item ko dhoondhein
+        # TAG: div | CLASS: slick-slide
         video_containers = main_list_wrapper.find_all('div', class_='slick-slide') 
         
         for container in video_containers:
@@ -69,7 +73,9 @@ def scrape_new_zee5_links(user_cookies: str) -> list:
         print(f"Parsing Error: {e}")
         return []
 
-# ---------------------------------------------------------------------
+# =========================================================
+# MONITORING TASK AND SCHEDULER
+# =========================================================
 
 async def zee5_monitor_task(client: Client):
     global FIRST_RUN_COMPLETED
